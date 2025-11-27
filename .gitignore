@@ -1,0 +1,100 @@
+# .gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# Data files (large, downloaded from Kaggle)
+data/*.csv
+data/*.zip
+data/DOH*
+
+# Trained models (large, regenerated)
+models/*.pkl
+models/*.joblib
+
+# Generated reports
+reports/*.csv
+reports/*.png
+reports/*.html
+
+# Predictions (generated daily)
+predictions_7d.json
+predictions_7d.csv
+locations_metadata.json
+
+# Logs
+*.log
+logs/
+pipeline.log
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Kaggle credentials (keep secure!)
+.kaggle/
+kaggle.json
+
+# pytest
+.pytest_cache/
+.coverage
+htmlcov/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Secrets
+*.pem
+*.key
+secrets/
