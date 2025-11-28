@@ -20,6 +20,7 @@ from api.routes import (
     locations_router,
     danger_zones_router,
     metrics_router,
+    simulations_router,
 )
 
 
@@ -36,10 +37,11 @@ A REST API for accessing disease outbreak predictions and visualization data.
 
 ### Features
 
-- **🔮 Predictions**: 7-day infection rate forecasts for tracked locations
-- **📍 Locations**: Information about tracked provinces/regions
-- **🗺️ Danger Zones**: Color-coded risk data for map visualization
-- **📊 Metrics**: Model performance statistics
+- **Predictions**: 7-day infection rate forecasts for tracked locations
+- **Locations**: Information about tracked provinces/regions
+- **Danger Zones**: Color-coded risk data for map visualization
+- **Metrics**: Model performance statistics
+- **Simulations**: Interactive SEIRD epidemic simulations
 
 ### For Frontend Developers
 
@@ -76,6 +78,7 @@ Predictions are updated daily at 6:00 AM UTC via automated pipeline.
     app.include_router(predictions_router, prefix=api_prefix)
     app.include_router(danger_zones_router, prefix=api_prefix)
     app.include_router(metrics_router, prefix=api_prefix)
+    app.include_router(simulations_router, prefix=api_prefix)
     
     # Root endpoint
     @app.get("/", tags=["Root"])
