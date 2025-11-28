@@ -306,3 +306,360 @@ class ErrorResponse(BaseModel):
             }
         }
     )
+
+
+# ============================================================================
+# Epidemic Simulation Schemas
+# ============================================================================
+
+class AgentState(str, Enum):
+    """Health state of an agent in the simulation."""
+    SUSCEPTIBLE = "S"
+    EXPOSED = "E"
+    INFECTED = "I"
+    RECOVERED = "R"
+    DECEASED = "D"
+
+
+class SimulationStatus(str, Enum):
+    """Status of a simulation instance."""
+    CREATED = "created"
+    RUNNING = "running"
+    PAUSED = "paused"
+    COMPLETED = "completed"
+    ERROR = "error"
+
+
+class SimulationConfigRequest(BaseModel):
+    """
+    Configuration parameters for starting a new epidemic simulation.
+    Uses SEIRD model: Susceptible → Exposed → Infected → Recovered/Deceased
+    """
+    # Population settings
+    population_size: int = Field(
+        default=200, 
+        ge=10, 
+        le=2000,
+        description="Total number of agents in the simulation"
+    )
+    grid_size: float = Field(
+        default=100.0, 
+        ge=20.0, 
+        le=500.0,
+        description="Size of the simulation world (square grid)"
+    )
+    initial_infected: int = Field(
+        default=1,
+        ge=1,
+        le=50,
+        description="Number of initially infected agents"
+    )
+    
+    # Disease characteristics
+    infection_rate: float = Field(
+        default=1.0, 
+        ge=0.0, 
+        le=5.0,
+        alias="beta",
+        description="Transmission probability per contact (β)"
+    )
+    incubation_mean: float = Field(
+        default=5.0, 
+        ge=1.0, 
+        le=14.0,
+        description="Mean incubation period in days"
+    )
+    incubation_std: float = Field(
+        default=2.0, 
+        ge=0.1, 
+        le=5.0,
+        description="Standard deviation of incubation period"
+    )
+    infectious_mean: float = Field(
+        default=7.0, 
+        ge=1.0, 
+        le=21.0,
+        description="Mean infectious period in days"
+    )
+    infectious_std: float = Field(
+        default=3.0, 
+        ge=0.1, 
+        le=7.0,
+        description="Standard deviation of infectious period"
+    )
+    mortality_rate: float = Field(
+        default=0.02, 
+        ge=0.0, 
+        le=0.5,
+        description="Case fatality rate (probability of death given infection)"
+    )
+    interaction_radius: float = Field(
+        default=2.0,
+        ge=0.5,
+        le=10.0,
+        description="Distance within which agents can infect others"
+    )
+    
+    # Interventions
+    vaccination_rate: float = Field(
+        default=0.0, 
+        ge=0.0, 
+        le=0.1,
+        description="Daily vaccination rate (S→R transition)"
+    )
+    detection_probability: float = Field(
+        default=0.0, 
+        ge=0.0, 
+        le=1.0,
+        description="Probability of detecting an infectious case"
+    )
+    isolation_compliance: float = Field(
+        default=0.8, 
+        ge=0.0, 
+        le=1.0,
+        description="Probability of complying with isolation if detected"
+    )
+    
+    # Mobility parameters
+    home_attraction: float = Field(
+        default=0.05, 
+        ge=0.0, 
+        le=0.5,
+        description="Strength of pull towards home location"
+    )
+    random_movement: float = Field(
+        default=1.0, 
+        ge=0.0, 
+        le=3.0,
+        description="Intensity of random walk movement"
+    )
+    
+    # Simulation settings
+    time_step: float = Field(
+        default=0.5, 
+        ge=0.1, 
+        le=1.0,
+        alias="dt",
+        description="Simulation time step (smaller = more accurate but slower)"
+    )
+    
+    model_config = ConfigDict(
+        populate_by_name=True,
+        json_schema_extra={
+            "example": {
+                "population_size": 200,
+                "grid_size": 100.0,
+                "initial_infected": 1,
+                "infection_rate": 1.0,
+                "incubation_mean": 5.0,
+                "incubation_std": 2.0,
+                "infectious_mean": 7.0,
+                "infectious_std": 3.0,
+                "mortality_rate": 0.02,
+                "vaccination_rate": 0.0,
+                "detection_probability": 0.0,
+                "isolation_compliance": 0.8,
+                "home_attraction": 0.05,
+                "random_movement": 1.0,
+                "time_step": 0.5
+            }
+        }
+    )
+
+
+class AgentData(BaseModel):
+    """Data for a single agent in the simulation (for visualization)."""
+    id: int = Field(..., description="Unique agent identifier")
+    x: float = Field(..., description="X coordinate position")
+    y: float = Field(..., description="Y coordinate position")
+    state: AgentState = Field(..., description="Current health state")
+    days_in_state: float = Field(..., description="Days spent in current state")
+    is_isolated: bool = Field(..., description="Whether agent is in isolation")
+    
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "id": 0,
+                "x": 45.2,
+                "y": 67.8,
+                "state": "S",
+                "days_in_state": 0.0,
+                "is_isolated": False
+            }
+        }
+    )
+
+
+class SimulationStats(BaseModel):
+    """Statistical data from the simulation at current time step."""
+    susceptible: int = Field(..., description="Number of susceptible agents")
+    exposed: int = Field(..., description="Number of exposed agents")
+    infected: int = Field(..., description="Number of infected agents")
+    recovered: int = Field(..., description="Number of recovered agents")
+    deceased: int = Field(..., description="Number of deceased agents")
+    
+    # Time series (history up to current point)
+    susceptible_history: List[int] = Field(default=[], description="S count over time")
+    exposed_history: List[int] = Field(default=[], description="E count over time")
+    infected_history: List[int] = Field(default=[], description="I count over time")
+    recovered_history: List[int] = Field(default=[], description="R count over time")
+    deceased_history: List[int] = Field(default=[], description="D count over time")
+    
+    # Reproduction number
+    current_rt: float = Field(..., description="Current effective reproduction number")
+    rt_history: List[float] = Field(default=[], description="Rt over time")
+    
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "susceptible": 195,
+                "exposed": 2,
+                "infected": 3,
+                "recovered": 0,
+                "deceased": 0,
+                "susceptible_history": [199, 198, 197, 196, 195],
+                "exposed_history": [0, 1, 1, 2, 2],
+                "infected_history": [1, 1, 2, 2, 3],
+                "recovered_history": [0, 0, 0, 0, 0],
+                "deceased_history": [0, 0, 0, 0, 0],
+                "current_rt": 2.5,
+                "rt_history": [2.0, 2.2, 2.3, 2.4, 2.5]
+            }
+        }
+    )
+
+
+class SimulationState(BaseModel):
+    """Current state of a simulation instance."""
+    simulation_id: str = Field(..., description="Unique simulation identifier")
+    status: SimulationStatus = Field(..., description="Current simulation status")
+    current_day: float = Field(..., description="Current simulation day")
+    total_steps: int = Field(..., description="Total steps executed")
+    
+    # Configuration used
+    config: SimulationConfigRequest = Field(..., description="Simulation configuration")
+    
+    # Current statistics
+    stats: SimulationStats = Field(..., description="Current statistics")
+    
+    # Metadata
+    created_at: datetime = Field(..., description="When simulation was created")
+    last_updated: datetime = Field(..., description="Last update timestamp")
+    
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "simulation_id": "sim_abc123",
+                "status": "running",
+                "current_day": 5.5,
+                "total_steps": 11,
+                "config": {},
+                "stats": {},
+                "created_at": "2025-11-28T12:00:00Z",
+                "last_updated": "2025-11-28T12:05:00Z"
+            }
+        }
+    )
+
+
+class SimulationCreateResponse(BaseModel):
+    """Response when creating a new simulation."""
+    simulation_id: str = Field(..., description="Unique simulation identifier")
+    status: SimulationStatus = Field(..., description="Initial simulation status")
+    message: str = Field(..., description="Status message")
+    config: SimulationConfigRequest = Field(..., description="Applied configuration")
+    created_at: datetime = Field(..., description="Creation timestamp")
+    
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "simulation_id": "sim_abc123",
+                "status": "created",
+                "message": "Simulation created successfully",
+                "config": {},
+                "created_at": "2025-11-28T12:00:00Z"
+            }
+        }
+    )
+
+
+class SimulationRunRequest(BaseModel):
+    """Request to run simulation for specified number of steps or days."""
+    steps: Optional[int] = Field(
+        default=None, 
+        ge=1, 
+        le=10000,
+        description="Number of steps to run"
+    )
+    days: Optional[float] = Field(
+        default=None, 
+        ge=0.1, 
+        le=365.0,
+        description="Number of days to simulate"
+    )
+    stop_when_no_infected: bool = Field(
+        default=True,
+        description="Stop simulation when no infected/exposed agents remain"
+    )
+    
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "days": 30.0,
+                "stop_when_no_infected": True
+            }
+        }
+    )
+
+
+class SimulationAgentsResponse(BaseModel):
+    """Response containing agent positions for visualization."""
+    simulation_id: str = Field(..., description="Simulation identifier")
+    current_day: float = Field(..., description="Current simulation day")
+    agents: List[AgentData] = Field(..., description="List of all agents")
+    grid_size: float = Field(..., description="Size of simulation grid")
+    
+    # Color mapping for visualization
+    state_colors: dict = Field(
+        default={
+            "S": "#3498db",  # Blue - Susceptible
+            "E": "#f1c40f",  # Yellow - Exposed
+            "I": "#e74c3c",  # Red - Infected
+            "R": "#2ecc71",  # Green - Recovered
+            "D": "#34495e"   # Dark Grey - Deceased
+        },
+        description="Suggested colors for each state"
+    )
+    
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "simulation_id": "sim_abc123",
+                "current_day": 5.5,
+                "agents": [],
+                "grid_size": 100.0,
+                "state_colors": {
+                    "S": "#3498db",
+                    "E": "#f1c40f", 
+                    "I": "#e74c3c",
+                    "R": "#2ecc71",
+                    "D": "#34495e"
+                }
+            }
+        }
+    )
+
+
+class SimulationListResponse(BaseModel):
+    """Response listing all active simulations."""
+    simulations: List[SimulationState] = Field(..., description="List of simulations")
+    count: int = Field(..., description="Total number of simulations")
+    
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "simulations": [],
+                "count": 0
+            }
+        }
+    )
