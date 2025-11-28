@@ -2,7 +2,7 @@
 
 ## Overview
 
-This REST API provides disease outbreak predictions and visualization data for the Pandemic Outbreak Tracker dashboard. It's designed to serve the frontend application with data for interactive map visualizations and prediction charts.
+This REST API provides disease outbreak predictions, visualization data, and epidemic simulations for the Pandemic Outbreak Tracker dashboard. It's designed to serve the frontend application with data for interactive map visualizations, prediction charts, and agent-based epidemic simulations.
 
 **Base URL:** `http://localhost:8000/api/v1`
 
@@ -51,6 +51,14 @@ curl http://localhost:8000/api/v1/danger-zones/geojson
 | GET | `/danger-zones` | Get danger zones for map |
 | GET | `/danger-zones/geojson` | Get GeoJSON for Mapbox/Leaflet |
 | GET | `/metrics` | Get model performance metrics |
+| POST | `/simulations` | Create new epidemic simulation |
+| GET | `/simulations` | List all simulations |
+| GET | `/simulations/{id}` | Get simulation state |
+| POST | `/simulations/{id}/step` | Run one simulation step |
+| POST | `/simulations/{id}/run` | Run simulation for N steps/days |
+| GET | `/simulations/{id}/stats` | Get SEIRD statistics |
+| GET | `/simulations/{id}/agents` | Get agent positions for visualization |
+| DELETE | `/simulations/{id}` | Delete simulation |
 
 ---
 
@@ -374,6 +382,285 @@ Get model performance metrics.
 
 ---
 
+### Simulations
+
+The simulation endpoints allow you to run interactive SEIRD (Susceptible-Exposed-Infected-Recovered-Deceased) epidemic simulations with agent-based modeling.
+
+#### `POST /api/v1/simulations`
+
+Create a new epidemic simulation.
+
+**Request Body:**
+```json
+{
+  "population_size": 200,
+  "grid_size": 100.0,
+  "initial_infected": 1,
+  "infection_rate": 1.0,
+  "incubation_mean": 5.0,
+  "incubation_std": 2.0,
+  "infectious_mean": 7.0,
+  "infectious_std": 3.0,
+  "mortality_rate": 0.02,
+  "vaccination_rate": 0.0,
+  "detection_probability": 0.0,
+  "isolation_compliance": 0.8,
+  "home_attraction": 0.05,
+  "random_movement": 1.0,
+  "time_step": 0.5
+}
+```
+
+All fields are optional and have sensible defaults.
+
+**Configuration Parameters:**
+
+| Parameter | Type | Default | Range | Description |
+|-----------|------|---------|-------|-------------|
+| `population_size` | int | 200 | 10-2000 | Number of agents |
+| `grid_size` | float | 100.0 | 20-500 | Simulation world size |
+| `initial_infected` | int | 1 | 1-50 | Starting infected count |
+| `infection_rate` | float | 1.0 | 0-5 | Transmission rate (β) |
+| `incubation_mean` | float | 5.0 | 1-14 | Mean incubation period (days) |
+| `incubation_std` | float | 2.0 | 0.1-5 | Std dev of incubation |
+| `infectious_mean` | float | 7.0 | 1-21 | Mean infectious period (days) |
+| `infectious_std` | float | 3.0 | 0.1-7 | Std dev of infectious period |
+| `mortality_rate` | float | 0.02 | 0-0.5 | Case fatality rate |
+| `vaccination_rate` | float | 0.0 | 0-0.1 | Daily vaccination rate |
+| `detection_probability` | float | 0.0 | 0-1 | Case detection rate |
+| `isolation_compliance` | float | 0.8 | 0-1 | Isolation adherence |
+| `home_attraction` | float | 0.05 | 0-0.5 | Pull towards home location |
+| `random_movement` | float | 1.0 | 0-3 | Random walk intensity |
+| `time_step` | float | 0.5 | 0.1-1 | Simulation time step |
+
+**Response (201):**
+```json
+{
+  "simulation_id": "sim_abc123def456",
+  "status": "created",
+  "message": "Simulation created successfully. Use POST /step or /run to advance.",
+  "config": { ... },
+  "created_at": "2025-11-28T12:00:00Z"
+}
+```
+
+#### `GET /api/v1/simulations`
+
+List all active simulations.
+
+**Response:**
+```json
+{
+  "simulations": [
+    {
+      "simulation_id": "sim_abc123",
+      "status": "running",
+      "current_day": 15.5,
+      "total_steps": 31,
+      "config": { ... },
+      "stats": { ... },
+      "created_at": "2025-11-28T12:00:00Z",
+      "last_updated": "2025-11-28T12:05:00Z"
+    }
+  ],
+  "count": 1
+}
+```
+
+#### `GET /api/v1/simulations/{simulation_id}`
+
+Get the current state of a simulation.
+
+**Response:**
+```json
+{
+  "simulation_id": "sim_abc123",
+  "status": "running",
+  "current_day": 15.5,
+  "total_steps": 31,
+  "config": { ... },
+  "stats": {
+    "susceptible": 150,
+    "exposed": 10,
+    "infected": 25,
+    "recovered": 13,
+    "deceased": 2,
+    "current_rt": 1.8,
+    "susceptible_history": [199, 198, ...],
+    "exposed_history": [0, 1, ...],
+    "infected_history": [1, 1, ...],
+    "recovered_history": [0, 0, ...],
+    "deceased_history": [0, 0, ...],
+    "rt_history": [0.0, 2.1, ...]
+  },
+  "created_at": "2025-11-28T12:00:00Z",
+  "last_updated": "2025-11-28T12:05:00Z"
+}
+```
+
+#### `POST /api/v1/simulations/{simulation_id}/step`
+
+Run one simulation time step.
+
+**Response:** Returns updated `SimulationState` (same as GET)
+
+#### `POST /api/v1/simulations/{simulation_id}/run`
+
+Run simulation for multiple steps or days.
+
+**Request Body:**
+```json
+{
+  "steps": 100,
+  "days": null,
+  "stop_when_no_infected": true
+}
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `steps` | int | Number of steps to run (1-10000) |
+| `days` | float | Number of days to simulate (0.1-365) |
+| `stop_when_no_infected` | bool | Stop when epidemic ends (default: true) |
+
+Specify either `steps` or `days`, not both. If neither specified, runs for 100 days.
+
+**Response:** Returns updated `SimulationState`
+
+#### `GET /api/v1/simulations/{simulation_id}/stats`
+
+Get detailed SEIRD statistics.
+
+**Response:**
+```json
+{
+  "susceptible": 150,
+  "exposed": 10,
+  "infected": 25,
+  "recovered": 13,
+  "deceased": 2,
+  "susceptible_history": [199, 198, 197, ...],
+  "exposed_history": [0, 1, 2, ...],
+  "infected_history": [1, 1, 2, ...],
+  "recovered_history": [0, 0, 0, ...],
+  "deceased_history": [0, 0, 0, ...],
+  "current_rt": 1.8,
+  "rt_history": [0.0, 2.1, 1.9, ...]
+}
+```
+
+#### `GET /api/v1/simulations/{simulation_id}/agents`
+
+Get agent positions for visualization.
+
+**Query Parameters:**
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `include_deceased` | bool | true | Include deceased agents |
+
+**Response:**
+```json
+{
+  "simulation_id": "sim_abc123",
+  "current_day": 15.5,
+  "grid_size": 100.0,
+  "agents": [
+    {
+      "id": 0,
+      "x": 45.2,
+      "y": 67.8,
+      "state": "S",
+      "days_in_state": 15.5,
+      "is_isolated": false
+    },
+    {
+      "id": 1,
+      "x": 23.1,
+      "y": 89.4,
+      "state": "I",
+      "days_in_state": 3.0,
+      "is_isolated": false
+    }
+  ],
+  "state_colors": {
+    "S": "#3498db",
+    "E": "#f1c40f",
+    "I": "#e74c3c",
+    "R": "#2ecc71",
+    "D": "#34495e"
+  }
+}
+```
+
+**Agent States:**
+| State | Color | Description |
+|-------|-------|-------------|
+| S | Blue (#3498db) | Susceptible - Can be infected |
+| E | Yellow (#f1c40f) | Exposed - Infected but not yet infectious |
+| I | Red (#e74c3c) | Infected - Infectious and can spread disease |
+| R | Green (#2ecc71) | Recovered - Immune |
+| D | Grey (#34495e) | Deceased |
+
+#### `DELETE /api/v1/simulations/{simulation_id}`
+
+Delete a simulation.
+
+**Response:** 204 No Content
+
+---
+
+### Simulation Visualization Example
+
+```javascript
+// Create simulation
+const response = await fetch('http://localhost:8000/api/v1/simulations', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    population_size: 300,
+    infection_rate: 1.5,
+    mortality_rate: 0.03
+  })
+});
+const { simulation_id } = await response.json();
+
+// Run simulation step by step for animation
+async function animate() {
+  const stepResponse = await fetch(
+    `http://localhost:8000/api/v1/simulations/${simulation_id}/step`,
+    { method: 'POST' }
+  );
+  const state = await stepResponse.json();
+  
+  // Get agent positions
+  const agentsResponse = await fetch(
+    `http://localhost:8000/api/v1/simulations/${simulation_id}/agents`
+  );
+  const { agents, state_colors, grid_size } = await agentsResponse.json();
+  
+  // Render agents on canvas
+  agents.forEach(agent => {
+    ctx.fillStyle = state_colors[agent.state];
+    ctx.beginPath();
+    ctx.arc(
+      agent.x / grid_size * canvas.width,
+      agent.y / grid_size * canvas.height,
+      5, 0, Math.PI * 2
+    );
+    ctx.fill();
+  });
+  
+  // Continue if simulation not complete
+  if (state.status !== 'completed') {
+    requestAnimationFrame(animate);
+  }
+}
+
+animate();
+```
+
+---
+
 ## Color Legend for Danger Levels
 
 | Level | Risk Score | Color | Hex Code |
@@ -420,6 +707,7 @@ pytest tests/ -v
 
 # Run specific test file
 pytest tests/test_danger_zones.py -v
+pytest tests/test_simulations.py -v
 
 # Run with coverage
 pytest tests/ --cov=api --cov-report=html

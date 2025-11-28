@@ -13,7 +13,7 @@ by the data analyst team and placed in api/services/simulation_service.py
 """
 
 import uuid
-from datetime import datetime, UTC
+from datetime import datetime, timezone
 from typing import Dict, Optional
 from fastapi import APIRouter, HTTPException, Query
 
@@ -56,7 +56,7 @@ class SimulationStore:
     def create(self, config: SimulationConfigRequest) -> str:
         """Create a new simulation and return its ID."""
         sim_id = f"sim_{uuid.uuid4().hex[:12]}"
-        now = datetime.now(UTC)
+        now = datetime.now(timezone.utc)
         
         # Initialize mock simulation data
         # TODO: Replace with actual EpidemicSimulation instantiation
@@ -110,7 +110,7 @@ class SimulationStore:
         """Update simulation data."""
         if sim_id in self._simulations:
             self._simulations[sim_id].update(data)
-            self._simulations[sim_id]["last_updated"] = datetime.now(UTC)
+            self._simulations[sim_id]["last_updated"] = datetime.now(timezone.utc)
     
     def delete(self, sim_id: str) -> bool:
         """Delete simulation. Returns True if deleted."""
@@ -240,7 +240,7 @@ class SimulationStore:
         if new_i == 0 and new_e == 0:
             sim["status"] = SimulationStatus.COMPLETED
         
-        sim["last_updated"] = datetime.now(UTC)
+        sim["last_updated"] = datetime.now(timezone.utc)
         return True
 
 

@@ -3,7 +3,7 @@ Metrics Router
 Endpoints for model performance metrics and statistics.
 """
 
-from datetime import datetime, UTC
+from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException
 from api.models.schemas import MetricsResponse, ModelMetrics, ErrorResponse
 from api.config import settings
@@ -55,7 +55,7 @@ async def get_all_metrics() -> MetricsResponse:
             test_rmse=round(row["test_rmse"], 2),
             test_r2=round(row["test_r2"], 4),
             n_estimators=int(row["n_estimators"]),
-            trained_at=datetime.now(UTC)  # Would come from model metadata
+            trained_at=datetime.now(timezone.utc)  # Would come from model metadata
         )
         metrics_list.append(metrics)
     
@@ -66,7 +66,7 @@ async def get_all_metrics() -> MetricsResponse:
         metrics=metrics_list,
         average_mae=avg_mae,
         average_r2=avg_r2,
-        last_training=datetime.now(UTC)  # Would come from model metadata
+        last_training=datetime.now(timezone.utc)  # Would come from model metadata
     )
 
 
@@ -111,7 +111,7 @@ async def get_location_metrics(location_name: str) -> ModelMetrics:
             test_rmse=round(row["test_rmse"], 2),
             test_r2=round(row["test_r2"], 4),
             n_estimators=int(row["n_estimators"]),
-            trained_at=datetime.now(UTC)
+            trained_at=datetime.now(timezone.utc)
         )
     
     except HTTPException:

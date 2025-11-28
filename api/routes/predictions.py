@@ -3,7 +3,7 @@ Predictions Router
 Endpoints for retrieving 7-day infection rate predictions.
 """
 
-from datetime import datetime, UTC
+from datetime import datetime, timezone
 from typing import Optional, List
 from fastapi import APIRouter, HTTPException, Query
 from api.models.schemas import (
@@ -49,7 +49,7 @@ async def get_all_predictions() -> PredictionsResponse:
     return PredictionsResponse(
         predictions=predictions,
         status=status,
-        generated_at=generated_at or datetime.now(UTC),
+        generated_at=generated_at or datetime.now(timezone.utc),
         next_update=await prediction_service.get_next_update_time()
     )
 
