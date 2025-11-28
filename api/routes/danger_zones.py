@@ -3,7 +3,7 @@ Danger Zones Router
 Endpoints for map visualization data with color-coded danger levels.
 """
 
-from datetime import datetime, UTC
+from datetime import datetime, timezone
 from fastapi import APIRouter, Query
 from api.models.schemas import DangerZonesResponse, DangerZone, DangerLevel
 from api.services.prediction_service import PredictionService
@@ -119,7 +119,7 @@ async def get_danger_zones(
             "high": {"color": settings.danger_color_high, "label": "High Risk (50-75)"},
             "critical": {"color": settings.danger_color_critical, "label": "Critical Risk (75-100)"}
         },
-        generated_at=datetime.now(UTC)
+        generated_at=datetime.now(timezone.utc)
     )
 
 

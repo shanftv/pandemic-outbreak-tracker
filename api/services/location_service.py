@@ -3,7 +3,7 @@ Location Service
 Business logic for accessing location data.
 """
 
-from datetime import datetime, UTC
+from datetime import datetime, timezone
 from typing import List, Optional
 import pandas as pd
 from api.models.schemas import LocationInfo
@@ -20,7 +20,7 @@ class LocationService:
     
     def _load_locations(self) -> pd.DataFrame:
         """Load location data from features CSV."""
-        now = datetime.now(UTC)
+        now = datetime.now(timezone.utc)
         
         # Check cache
         if (self._cache is not None and 
@@ -61,7 +61,7 @@ class LocationService:
                 id=location_id,
                 name=location_name,
                 total_cases=total_cases,
-                last_updated=last_date.to_pydatetime() if pd.notna(last_date) else datetime.now(UTC),
+                last_updated=last_date.to_pydatetime() if pd.notna(last_date) else datetime.now(timezone.utc),
                 latitude=coords.get("latitude") if include_coordinates else None,
                 longitude=coords.get("longitude") if include_coordinates else None
             )
@@ -92,7 +92,7 @@ class LocationService:
                 id=name.lower().replace(" ", "_"),
                 name=name,
                 total_cases=0,
-                last_updated=datetime.now(UTC),
+                last_updated=datetime.now(timezone.utc),
                 latitude=coords["latitude"] if include_coordinates else None,
                 longitude=coords["longitude"] if include_coordinates else None
             )

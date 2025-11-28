@@ -4,7 +4,7 @@ Business logic for accessing and processing prediction data.
 """
 
 import json
-from datetime import datetime, timedelta, UTC
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 from api.models.schemas import (
     LocationPrediction, 
@@ -24,7 +24,7 @@ class PredictionService:
     
     def _load_predictions(self) -> dict:
         """Load predictions from JSON file with caching."""
-        now = datetime.now(UTC)
+        now = datetime.now(timezone.utc)
         
         # Check cache validity
         if (self._cache is not None and 
@@ -89,7 +89,7 @@ class PredictionService:
                 trend=trend,
                 last_7_day_actual=None,  # Would come from features data
                 percent_change=None,
-                generated_at=datetime.now(UTC)
+                generated_at=datetime.now(timezone.utc)
             )
             predictions.append(location_pred)
         
@@ -114,7 +114,7 @@ class PredictionService:
         
         try:
             mtime = datetime.fromtimestamp(settings.predictions_json.stat().st_mtime)
-            age = datetime.now(UTC).replace(tzinfo=None) - mtime
+            age = datetime.now(timezone.utc).replace(tzinfo=None) - mtime
             
             if age.days < 1:
                 return PredictionStatus.FRESH
@@ -141,7 +141,7 @@ class PredictionService:
         
         # Assuming daily updates at 6 AM UTC
         next_update = last_update.replace(hour=6, minute=0, second=0, microsecond=0)
-        if next_update <= datetime.now(UTC).replace(tzinfo=None):
+        if next_update <= datetime.now(timezone.utc).replace(tzinfo=None):
             next_update += timedelta(days=1)
         
         return next_update
@@ -183,7 +183,7 @@ class PredictionService:
             "decreasing_locations": decreasing,
             "stable_locations": stable,
             "top_5_risk": top_5,
-            "generated_at": datetime.now(UTC).isoformat()
+            "generated_at": datetime.now(timezone.utc).isoformat()
         }
     
     async def get_top_risk_locations(self, limit: int = 5) -> List[LocationPrediction]:

@@ -49,7 +49,7 @@ Wrapper around the EpidemicSimulation engine for API integration.
 """
 
 from typing import Dict, Optional, List
-from datetime import datetime, UTC
+from datetime import datetime, timezone
 import uuid
 
 from api.services.simulation_engine import EpidemicSimulation, SimulationConfig
@@ -94,8 +94,8 @@ class SimulationService:
             "id": sim_id,
             "config": config,
             "engine": simulation,
-            "created_at": datetime.now(UTC),
-            "last_updated": datetime.now(UTC),
+            "created_at": datetime.now(timezone.utc),
+            "last_updated": datetime.now(timezone.utc),
             "status": "created",
             "total_steps": 0,
         }
@@ -111,7 +111,7 @@ class SimulationService:
         sim["engine"].step()
         sim["total_steps"] += 1
         sim["status"] = "running"
-        sim["last_updated"] = datetime.now(UTC)
+        sim["last_updated"] = datetime.now(timezone.utc)
         
         # Check completion
         stats = sim["engine"].stats
