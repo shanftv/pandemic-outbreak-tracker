@@ -3,7 +3,7 @@ Health Check Router
 Provides system health and status endpoints.
 """
 
-from datetime import datetime, UTC
+from datetime import datetime, timezone
 from fastapi import APIRouter
 from api.models.schemas import HealthResponse
 from api.config import settings
@@ -38,7 +38,7 @@ async def health_check() -> HealthResponse:
     return HealthResponse(
         status="healthy",
         version=settings.app_version,
-        timestamp=datetime.now(UTC),
+        timestamp=datetime.now(timezone.utc),
         model_status=model_status
     )
 
@@ -64,5 +64,5 @@ async def readiness_check():
     return {
         "ready": is_ready,
         "checks": checks,
-        "timestamp": datetime.now(UTC).isoformat()
+        "timestamp": datetime.now(timezone.utc).isoformat()
     }
