@@ -467,6 +467,10 @@ class SimulationConfigRequest(BaseModel):
     )
 
 
+# Type alias for backward compatibility
+SimulationConfig = SimulationConfigRequest
+
+
 class AgentData(BaseModel):
     """Data for a single agent in the simulation (for visualization)."""
     id: int = Field(..., description="Unique agent identifier")
