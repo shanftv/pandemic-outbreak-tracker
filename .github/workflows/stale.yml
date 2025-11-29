@@ -1,0 +1,27 @@
+# .github/workflows/stale.yml
+name: Mark Stale Issues
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Daily
+  workflow_dispatch:
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+    
+    steps:
+      - uses: actions/stale@v9
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          stale-issue-message: 'This issue has been automatically marked as stale...'
+          stale-pr-message: 'This PR has been automatically marked as stale...'
+          close-issue-message: 'This issue was closed due to inactivity...'
+          days-before-issue-stale: 60
+          days-before-issue-close: 30
+          days-before-pr-stale: 30
+          days-before-pr-close: 14
+
