@@ -339,7 +339,7 @@ class SimulationConfigRequest(BaseModel):
     population_size: int = Field(
         default=200, 
         ge=10, 
-        le=2000,
+        le=10000,
         description="Total number of agents in the simulation"
     )
     grid_size: float = Field(
@@ -350,8 +350,8 @@ class SimulationConfigRequest(BaseModel):
     )
     initial_infected: int = Field(
         default=1,
-        ge=1,
-        le=50,
+        ge=0,
+        le=10000,
         description="Number of initially infected agents"
     )
     
@@ -359,14 +359,14 @@ class SimulationConfigRequest(BaseModel):
     infection_rate: float = Field(
         default=1.0, 
         ge=0.0, 
-        le=5.0,
+        le=20.0,
         alias="beta",
         description="Transmission probability per contact (β)"
     )
     incubation_mean: float = Field(
         default=5.0, 
-        ge=1.0, 
-        le=14.0,
+        ge=0.1, 
+        le=500.0,
         description="Mean incubation period in days"
     )
     incubation_std: float = Field(
@@ -377,8 +377,8 @@ class SimulationConfigRequest(BaseModel):
     )
     infectious_mean: float = Field(
         default=7.0, 
-        ge=1.0, 
-        le=21.0,
+        ge=0.1, 
+        le=500.0,
         description="Mean infectious period in days"
     )
     infectious_std: float = Field(
@@ -390,7 +390,7 @@ class SimulationConfigRequest(BaseModel):
     mortality_rate: float = Field(
         default=0.02, 
         ge=0.0, 
-        le=0.5,
+        le=2.0,
         description="Case fatality rate (probability of death given infection)"
     )
     interaction_radius: float = Field(
@@ -404,7 +404,7 @@ class SimulationConfigRequest(BaseModel):
     vaccination_rate: float = Field(
         default=0.0, 
         ge=0.0, 
-        le=0.1,
+        le=2.0,
         description="Daily vaccination rate (S→R transition)"
     )
     detection_probability: float = Field(
@@ -437,8 +437,8 @@ class SimulationConfigRequest(BaseModel):
     # Simulation settings
     time_step: float = Field(
         default=0.5, 
-        ge=0.1, 
-        le=1.0,
+        ge=0.001, 
+        le=10.0,
         alias="dt",
         description="Simulation time step (smaller = more accurate but slower)"
     )

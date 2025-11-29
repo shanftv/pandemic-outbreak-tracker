@@ -81,8 +81,8 @@ class SimulationService:
         if config.home_attraction < 0:
             return False, "Home attraction must be >= 0"
 
-        if config.random_force < 0:
-            return False, "Random force must be >= 0"
+        if config.random_movement < 0:
+            return False, "Random movement must be >= 0"
 
         # make sure parameters work together
         if config.incubation_mean + config.infectious_mean > 365:

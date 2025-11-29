@@ -1,5 +1,9 @@
 [![Python application](https://github.com/shanftv/pandemic-outbreak-tracker/actions/workflows/python-app.yml/badge.svg)](https://github.com/shanftv/pandemic-outbreak-tracker/actions/workflows/python-app.yml)
 
+[![CodeQL](https://github.com/shanftv/pandemic-outbreak-tracker/actions/workflows/codeql.yml/badge.svg)](https://github.com/shanftv/pandemic-outbreak-tracker/actions/workflows/codeql.yml)
+
+[![Deploy to Azure](https://github.com/shanftv/pandemic-outbreak-tracker/actions/workflows/azure-deploy.yml/badge.svg)](https://github.com/shanftv/pandemic-outbreak-tracker/actions/workflows/azure-deploy.yml)
+
 # Pandemic Outbreak Tracker
 
 COVID-19 Philippines infection rate prediction model using LightGBM regression. Generates 7-day forecasts for top provinces based on historical case data. Includes interactive SEIRD epidemic simulations for scenario modeling.
