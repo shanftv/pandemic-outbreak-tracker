@@ -203,7 +203,11 @@ class TestRunSimulationStep:
     
     def test_run_multiple_steps(self, client):
         """Test running multiple simulation steps."""
-        create_response = client.post("/api/v1/simulations")
+        # Use higher initial infected count to prevent early completion
+        create_response = client.post("/api/v1/simulations", json={
+            "population_size": 200,
+            "initial_infected": 10
+        })
         sim_id = create_response.json()["simulation_id"]
         
         # Run 5 steps

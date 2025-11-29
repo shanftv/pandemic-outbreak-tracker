@@ -1,0 +1,38 @@
+# .github/dependabot.yml
+version: 2
+updates:
+  # Python dependencies
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "shanftv"
+    labels:
+      - "dependencies"
+      - "python"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    # Group updates to reduce PR noise
+    groups:
+      production-dependencies:
+        patterns:
+          - "fastapi*"
+          - "uvicorn*"
+          - "pydantic*"
+          - "pytest*"
+          - "pandas*"
+          - "numpy*"
+          - "scikit-learn*"
+          - "lightgbm*"
+      development-dependencies:
+        patterns:
+          - "ruff*"
+          - "flake8*"
+          - "black*"
+          - "mypy*"
+
