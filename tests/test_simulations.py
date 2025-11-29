@@ -650,10 +650,11 @@ class TestSimulationIntegration:
     def test_multiple_concurrent_simulations(self, client):
         """Test running multiple simulations concurrently."""
         # Create multiple simulations with different configs
+        # Use higher initial_infected to prevent early completion during 10-step test
         configs = [
-            {"population_size": 100, "infection_rate": 0.5},
-            {"population_size": 200, "infection_rate": 1.0},
-            {"population_size": 300, "infection_rate": 2.0},
+            {"population_size": 100, "infection_rate": 0.5, "initial_infected": 5},
+            {"population_size": 200, "infection_rate": 1.0, "initial_infected": 10},
+            {"population_size": 300, "infection_rate": 2.0, "initial_infected": 15},
         ]
         
         sim_ids = []

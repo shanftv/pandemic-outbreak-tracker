@@ -41,16 +41,16 @@ class SimulationService:
         Returns:
             Tuple of (is_valid, error_message)
         """
-        # check population size is reasonable
-        if not (50 <= config.population_size <= 5000):
-            return False, "Population size must be between 50 and 5000"
+        # check population size is reasonable (matches Pydantic: ge=10, le=10000)
+        if not (10 <= config.population_size <= 10000):
+            return False, "Population size must be between 10 and 10000"
 
-        if not (10 <= config.grid_size <= 500):
-            return False, "Grid size must be between 10 and 500"
+        if not (20 <= config.grid_size <= 500):
+            return False, "Grid size must be between 20 and 500"
 
-        # disease parameters need to make sense
-        if not (0 < config.infection_rate <= 10):
-            return False, "Infection rate (beta) must be between 0 and 10"
+        # disease parameters need to make sense (matches Pydantic: ge=0.0, le=5.0)
+        if not (0 <= config.infection_rate <= 5):
+            return False, "Infection rate (beta) must be between 0 and 5"
 
         if config.incubation_mean <= 0 or config.incubation_std < 0:
             return False, "Incubation period mean must be > 0 and std >= 0"
@@ -88,11 +88,12 @@ class SimulationService:
         if config.incubation_mean + config.infectious_mean > 365:
             return False, "Total disease duration exceeds 1 year"
 
-        if config.initial_infected > config.population_size:
-            return False, "Initial infected cannot exceed population size"
+        # initial_infected must be strictly less than population_size (need at least 1 susceptible)
+        if config.initial_infected >= config.population_size:
+            return False, "Initial infected must be less than population size"
 
-        if not (1 <= config.initial_infected <= config.population_size):
-            return False, "Initial infected must be at least 1"
+        if not (1 <= config.initial_infected < config.population_size):
+            return False, "Initial infected must be at least 1 and less than population size"
 
         return True, None
 

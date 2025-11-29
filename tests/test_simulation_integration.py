@@ -42,27 +42,27 @@ class TestSimulationParameterValidation:
     def test_population_below_minimum(self):
         """test population below minimum threshold"""
         config = SimulationConfig.model_construct(
-            population_size=49,
+            population_size=9,  # Below Pydantic minimum of 10
             grid_size=50,
             infection_rate=1.0,
             incubation_mean=5.0,
             infectious_mean=7.0,
         )
         is_valid, error = self.service.validate_simulation_config(config)
-        assert not is_valid, "Should reject population < 50"
+        assert not is_valid, "Should reject population < 10"
         assert "population" in error.lower()
 
     def test_population_above_maximum(self):
         """test population above maximum threshold"""
         config = SimulationConfig.model_construct(
-            population_size=5001,
+            population_size=10001,  # Above Pydantic maximum of 10000
             grid_size=50,
             infection_rate=1.0,
             incubation_mean=5.0,
             infectious_mean=7.0,
         )
         is_valid, error = self.service.validate_simulation_config(config)
-        assert not is_valid, "Should reject population > 5000"
+        assert not is_valid, "Should reject population > 10000"
 
     def test_zero_mortality_rate(self):
         """test zero mortality rate (valid edge case)"""
@@ -194,7 +194,7 @@ class TestSimulationParameterValidation:
         assert not is_valid, "Time step > 1 should be invalid"
 
     def test_zero_infection_rate(self):
-        """test zero infection rate"""
+        """test zero infection rate (valid per Pydantic ge=0.0)"""
         config = SimulationConfig(
             population_size=100,
             grid_size=50,
@@ -203,19 +203,19 @@ class TestSimulationParameterValidation:
             infectious_mean=7.0,
         )
         is_valid, error = self.service.validate_simulation_config(config)
-        assert not is_valid, "Zero infection rate should be invalid"
+        assert is_valid, "Zero infection rate should be valid (simulates no transmission scenario)"
 
     def test_high_infection_rate(self):
-        """test high infection rate"""
+        """test high infection rate (at Pydantic max of 5.0)"""
         config = SimulationConfig.model_construct(
             population_size=100,
             grid_size=50,
-            infection_rate=10.0,
+            infection_rate=5.0,  # Pydantic max is 5.0
             incubation_mean=5.0,
             infectious_mean=7.0,
         )
         is_valid, error = self.service.validate_simulation_config(config)
-        assert is_valid, "High infection rate should be valid"
+        assert is_valid, "High infection rate (5.0) should be valid"
 
 
 class TestEpidemicMetricsCalculation:
