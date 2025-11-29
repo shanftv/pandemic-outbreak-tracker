@@ -731,7 +731,7 @@ class SimulationOutput(BaseModel):
     simulation_id: str = Field(..., description="Unique simulation identifier")
     location_id: str = Field(..., description="Location identifier")
     location_name: str = Field(..., description="Location display name")
-    config: SimulationConfig = Field(..., description="Simulation configuration used")
+    config: SimulationConfigRequest = Field(..., description="Simulation configuration used")
     statistics: SimulationStatistics = Field(..., description="Time-series statistics")
     metrics: EpidemicMetrics = Field(..., description="Calculated epidemic metrics")
     agent_geojson: dict = Field(..., description="Agent positions in GeoJSON format")
