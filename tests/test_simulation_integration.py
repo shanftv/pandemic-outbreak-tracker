@@ -41,7 +41,7 @@ class TestSimulationParameterValidation:
 
     def test_population_below_minimum(self):
         """test population below minimum threshold"""
-        config = SimulationConfig(
+        config = SimulationConfig.model_construct(
             population_size=49,
             grid_size=50,
             infection_rate=1.0,
@@ -54,7 +54,7 @@ class TestSimulationParameterValidation:
 
     def test_population_above_maximum(self):
         """test population above maximum threshold"""
-        config = SimulationConfig(
+        config = SimulationConfig.model_construct(
             population_size=5001,
             grid_size=50,
             infection_rate=1.0,
@@ -79,7 +79,7 @@ class TestSimulationParameterValidation:
 
     def test_100_percent_mortality(self):
         """test 100% mortality rate"""
-        config = SimulationConfig(
+        config = SimulationConfig.model_construct(
             population_size=100,
             grid_size=50,
             infection_rate=1.0,
@@ -92,7 +92,7 @@ class TestSimulationParameterValidation:
 
     def test_mortality_above_100_percent(self):
         """test mortality rate > 100%"""
-        config = SimulationConfig(
+        config = SimulationConfig.model_construct(
             population_size=100,
             grid_size=50,
             infection_rate=1.0,
@@ -118,7 +118,7 @@ class TestSimulationParameterValidation:
 
     def test_100_percent_vaccination(self):
         """test 100% daily vaccination rate"""
-        config = SimulationConfig(
+        config = SimulationConfig.model_construct(
             population_size=100,
             grid_size=50,
             infection_rate=1.0,
@@ -131,7 +131,7 @@ class TestSimulationParameterValidation:
 
     def test_initial_infected_exceeds_population(self):
         """test initial infected exceeds population"""
-        config = SimulationConfig(
+        config = SimulationConfig.model_construct(
             population_size=100,
             grid_size=50,
             infection_rate=1.0,
@@ -144,7 +144,7 @@ class TestSimulationParameterValidation:
 
     def test_zero_initial_infected(self):
         """test zero initial infected"""
-        config = SimulationConfig(
+        config = SimulationConfig.model_construct(
             population_size=100,
             grid_size=50,
             infection_rate=1.0,
@@ -157,7 +157,7 @@ class TestSimulationParameterValidation:
 
     def test_disease_duration_exceeds_year(self):
         """test disease duration > 1 year"""
-        config = SimulationConfig(
+        config = SimulationConfig.model_construct(
             population_size=100,
             grid_size=50,
             infection_rate=1.0,
@@ -169,7 +169,7 @@ class TestSimulationParameterValidation:
 
     def test_minimum_time_step(self):
         """test minimum time step"""
-        config = SimulationConfig(
+        config = SimulationConfig.model_construct(
             population_size=100,
             grid_size=50,
             infection_rate=1.0,
@@ -182,7 +182,7 @@ class TestSimulationParameterValidation:
 
     def test_time_step_too_large(self):
         """test time step > 1 day"""
-        config = SimulationConfig(
+        config = SimulationConfig.model_construct(
             population_size=100,
             grid_size=50,
             infection_rate=1.0,
@@ -207,7 +207,7 @@ class TestSimulationParameterValidation:
 
     def test_high_infection_rate(self):
         """test high infection rate"""
-        config = SimulationConfig(
+        config = SimulationConfig.model_construct(
             population_size=100,
             grid_size=50,
             infection_rate=10.0,

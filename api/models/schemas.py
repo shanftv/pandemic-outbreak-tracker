@@ -359,7 +359,7 @@ class SimulationConfigRequest(BaseModel):
     infection_rate: float = Field(
         default=1.0, 
         ge=0.0, 
-        le=20.0,
+        le=5.0,
         alias="beta",
         description="Transmission probability per contact (β)"
     )
@@ -390,7 +390,7 @@ class SimulationConfigRequest(BaseModel):
     mortality_rate: float = Field(
         default=0.02, 
         ge=0.0, 
-        le=2.0,
+        le=0.5,
         description="Case fatality rate (probability of death given infection)"
     )
     interaction_radius: float = Field(

@@ -30,9 +30,13 @@ from api.models.schemas import (
     AgentState,
     ErrorResponse,
 )
+from api.services.simulation_service import SimulationService
 
 
 router = APIRouter(prefix="/simulations", tags=["Simulations"])
+
+# Initialize simulation service for validation
+simulation_service = SimulationService()
 
 
 # ============================================================================
@@ -337,11 +341,12 @@ async def create_simulation(
     if config is None:
         config = SimulationConfigRequest()
     
-    # Validate initial infected doesn't exceed population
-    if config.initial_infected >= config.population_size:
+    # Validate configuration using custom validation
+    is_valid, error_message = simulation_service.validate_simulation_config(config)
+    if not is_valid:
         raise HTTPException(
             status_code=400,
-            detail="initial_infected must be less than population_size"
+            detail=error_message or "Invalid simulation configuration"
         )
     
     sim_id = simulation_store.create(config)
