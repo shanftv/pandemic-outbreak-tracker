@@ -54,6 +54,7 @@ jobs:
             htmlcov/
       
       - name: Coverage Report Summary
+        id: coverage-summary
         uses: irongut/CodeCoverageSummary@v1.3.0
         with:
           filename: coverage.xml
