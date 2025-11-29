@@ -663,3 +663,93 @@ class SimulationListResponse(BaseModel):
             }
         }
     )
+
+# Epidemic Metrics Schemas (for Simulation Analysis)
+
+class EpidemicMetrics(BaseModel):
+    """computed epidemic metrics from simulation."""
+    r0: float = Field(..., description="Basic reproduction number")
+    rt: float = Field(..., description="Effective reproduction number (current)")
+    attack_rate: float = Field(..., description="Attack rate (% of population infected)")
+    case_fatality_rate: float = Field(..., description="Case fatality rate (%)")
+    doubling_time: Optional[float] = Field(None, description="Doubling time of infections (days)")
+    peak_infected: int = Field(..., description="Peak number of concurrent infected")
+    peak_day: int = Field(..., description="Day peak infection occurred")
+    outbreak_duration: int = Field(..., description="Total days with active transmission")
+    current_infected: int = Field(..., description="Current infected count")
+    current_recovered: int = Field(..., description="Current recovered count")
+    current_deceased: int = Field(..., description="Current deceased count")
+    vaccination_coverage: float = Field(..., description="Vaccination coverage (%)")
+    growth_rate: float = Field(..., description="Recent growth rate of infections")
+    
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "r0": 2.5,
+                "rt": 1.2,
+                "attack_rate": 45.5,
+                "case_fatality_rate": 2.1,
+                "doubling_time": 3.5,
+                "peak_infected": 150,
+                "peak_day": 15,
+                "outbreak_duration": 45,
+                "current_infected": 20,
+                "current_recovered": 250,
+                "current_deceased": 5,
+                "vaccination_coverage": 0.0,
+                "growth_rate": 0.1
+            }
+        }
+    )
+
+
+class SimulationStatistics(BaseModel):
+    """time-series statistics from simulation."""
+    susceptible: List[int] = Field(..., description="Susceptible count per timestep")
+    exposed: List[int] = Field(..., description="Exposed count per timestep")
+    infected: List[int] = Field(..., description="Infected count per timestep")
+    recovered: List[int] = Field(..., description="Recovered count per timestep")
+    deceased: List[int] = Field(..., description="Deceased count per timestep")
+    rt_history: Optional[List[float]] = Field(None, description="Effective Rt per timestep")
+    
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "susceptible": [200, 199, 198],
+                "exposed": [0, 1, 2],
+                "infected": [0, 0, 1],
+                "recovered": [0, 0, 0],
+                "deceased": [0, 0, 0],
+                "rt_history": [0.0, 1.0, 1.5]
+            }
+        }
+    )
+
+
+class SimulationOutput(BaseModel):
+    """complete simulation output for API response."""
+    simulation_id: str = Field(..., description="Unique simulation identifier")
+    location_id: str = Field(..., description="Location identifier")
+    location_name: str = Field(..., description="Location display name")
+    config: SimulationConfig = Field(..., description="Simulation configuration used")
+    statistics: SimulationStatistics = Field(..., description="Time-series statistics")
+    metrics: EpidemicMetrics = Field(..., description="Calculated epidemic metrics")
+    agent_geojson: dict = Field(..., description="Agent positions in GeoJSON format")
+    trend: str = Field(..., description="Overall trend: 'increasing', 'decreasing', 'stable'")
+    generated_at: datetime = Field(..., description="When simulation was completed")
+    
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "simulation_id": "sim_abc123",
+                "location_id": "ncr",
+                "location_name": "NCR",
+                "config": {},
+                "statistics": {},
+                "metrics": {},
+                "agent_geojson": {"type": "FeatureCollection", "features": []},
+                "trend": "stable",
+                "generated_at": "2025-11-28T12:00:00Z"
+            }
+        }
+    )
