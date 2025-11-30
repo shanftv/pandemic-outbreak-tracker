@@ -1,15 +1,23 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import viteLogo from "/vite.svg";
-import "./App.css";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { Dashboard } from "./pages/Dashboard.jsx";
+import { PageLayout } from "./layout/PageLayout.jsx";
 
 function App() {
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center">
-      <h1 className="text-4xl font-light text-blue-600">
-        Pandemic Tracker Frontend
-      </h1>
-    </div>
+    <>
+      <Router>
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <PageLayout>
+                <Dashboard />
+              </PageLayout>
+            }
+          />
+        </Routes>
+      </Router>
+    </>
   );
 }
 
