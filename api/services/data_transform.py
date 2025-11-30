@@ -10,7 +10,7 @@ handles:
 """
 
 from typing import List, Dict, Any, Optional, Tuple
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import json
 import numpy as np
 
@@ -131,7 +131,7 @@ class SimulationTransformer:
         for state_key, counts in statistics.items():
             timeseries[state_key] = []
             for i, count in enumerate(counts):
-                current_date = start_date + TimeDelta(days=i * time_step)
+                current_date = start_date + timedelta(days=i * time_step)
                 timeseries[state_key].append(
                     {"date": current_date.isoformat(), "count": count, "day": i * time_step}
                 )
