@@ -928,7 +928,7 @@ class TestLocationServiceMethods:
             locations = await self.service.get_all_locations()
             if locations:
                 # Try to find by name
-                result = await self.service.get_location_by_id(locations[0].name)
+                _ = await self.service.get_location_by_id(locations[0].name)
                 # May or may not find depending on sample data
                 pass
 
