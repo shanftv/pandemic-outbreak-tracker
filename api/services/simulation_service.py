@@ -98,7 +98,8 @@ class SimulationService:
         return True, None
 
     def transform_agent_data_to_geojson(
-        self, agents: List[AgentData], location_id: str, location_name: str
+        self, agents: List[AgentData], location_id: str, location_name: str,
+        base_lat: float = 14.5, base_lon: float = 120.9, scale: float = 0.01
     ) -> Dict:
         """
         Transform agent positions and states to GeoJSON format for danger zones.
@@ -107,6 +108,9 @@ class SimulationService:
             agents: List of agent data
             location_id: Location identifier
             location_name: Location display name
+            base_lat: Base latitude for coordinate conversion
+            base_lon: Base longitude for coordinate conversion
+            scale: Scale factor for converting grid coordinates to lat/lon offset
 
         Returns:
             GeoJSON FeatureCollection
@@ -123,16 +127,24 @@ class SimulationService:
                 "D": 0,  # gone
             }
 
+            # Convert grid x, y to lat/lon coordinates
+            # AgentData uses x, y for grid positions
+            latitude = base_lat + (agent.y * scale)
+            longitude = base_lon + (agent.x * scale)
+
+            # Handle state value - could be enum or string
+            state_value = agent.state.value if hasattr(agent.state, 'value') else str(agent.state)
+
             feature = {
                 "type": "Feature",
                 "geometry": {
                     "type": "Point",
-                    "coordinates": [agent.longitude, agent.latitude],  # GeoJSON uses [lon, lat]
+                    "coordinates": [longitude, latitude],  # GeoJSON uses [lon, lat]
                 },
                 "properties": {
                     "agent_id": agent.id,
-                    "state": agent.state,
-                    "risk_level": state_to_risk.get(agent.state, 0),
+                    "state": state_value,
+                    "risk_level": state_to_risk.get(state_value, 0),
                     "days_in_state": agent.days_in_state,
                     "is_isolated": agent.is_isolated,
                 },
