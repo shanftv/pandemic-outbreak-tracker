@@ -4,6 +4,7 @@ import { DashboardMap } from "../components/DashboardMap.jsx";
 import { TopRiskLocationsTable } from "../components/TopRiskLocationsTable.jsx";
 
 export function Dashboard() {
+  document.title = "Dashboard | Pandemic Outbreak Tracker";
   return (
     <div>
       <GroupStatCards />
