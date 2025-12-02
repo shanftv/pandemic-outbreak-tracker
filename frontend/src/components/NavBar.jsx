@@ -23,13 +23,7 @@ export function NavBar() {
         >
           <Link to="/simulation">Simulation</Link>
         </li>
-        <li
-          className={`transition-colors duration-300 ${
-            location.pathname === "/about" ? "border-b-2" : ""
-          } hover:border-b-2 hover:border-(--color-white)`}
-        >
-          <Link to="/about">About</Link>
-        </li>
+     
       </ul>
     </nav>
   );
