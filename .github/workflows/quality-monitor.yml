@@ -1,5 +1,5 @@
 name: 'Quality Monitor'
-# Runs tests, coverage analysis, and linting on PRs
+# Runs tests, coverage analysis, and linting on PRs for both backend and frontend
 
 on:
   push:
@@ -12,9 +12,12 @@ permissions:
   pull-requests: write
 
 jobs:
-  monitor-project-quality:
-    name: Run the quality monitor
+  backend-quality:
+    name: Backend Quality Check
     runs-on: ubuntu-latest
+    outputs:
+      test_status: ${{ steps.tests.outputs.test_status }}
+      lint_status: ${{ steps.lint.outputs.lint_status }}
     
     steps:
       - uses: actions/checkout@v4
@@ -34,7 +37,7 @@ jobs:
       - name: Run linting with Ruff
         id: lint
         run: |
-          echo "## 🔍 Linting Results" > lint-results.md
+          echo "## 🐍 Python Linting Results" > lint-results.md
           echo "" >> lint-results.md
           if ruff check api/ scripts/ tests/ --output-format=grouped 2>&1 | tee lint-output.txt; then
             echo "✅ **No linting issues found!**" >> lint-results.md
@@ -65,17 +68,19 @@ jobs:
           file: ./coverage.xml
           fail_ci_if_error: false
           token: ${{ secrets.CODECOV_TOKEN }}
+          flags: backend
         continue-on-error: true
       
       - name: Upload test results
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: test-results
+          name: backend-test-results
           path: |
             test-results.xml
             coverage.xml
             htmlcov/
+            lint-results.md
       
       - name: Coverage Report Summary
         id: coverage-summary
@@ -107,20 +112,143 @@ jobs:
             echo "skipped=$SKIPPED" >> $GITHUB_OUTPUT
             echo "time=$TIME" >> $GITHUB_OUTPUT
           fi
+
+      - name: Upload backend summary
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-summary
+          path: |
+            lint-results.md
+            code-coverage-results.md
+
+  frontend-quality:
+    name: Frontend Quality Check
+    runs-on: ubuntu-latest
+    outputs:
+      lint_status: ${{ steps.lint.outputs.lint_status }}
+      build_status: ${{ steps.build.outputs.build_status }}
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      
+      - name: Install dependencies
+        run: |
+          cd frontend
+          npm ci
+      
+      - name: Run ESLint
+        id: lint
+        run: |
+          cd frontend
+          echo "## ⚛️ Frontend Linting Results" > ../frontend-lint-results.md
+          echo "" >> ../frontend-lint-results.md
+          if npm run lint 2>&1 | tee ../frontend-lint-output.txt; then
+            echo "✅ **No linting issues found!**" >> ../frontend-lint-results.md
+            echo "lint_status=success" >> $GITHUB_OUTPUT
+          else
+            echo "⚠️ **Linting issues detected:**" >> ../frontend-lint-results.md
+            echo "" >> ../frontend-lint-results.md
+            echo '```' >> ../frontend-lint-results.md
+            cat ../frontend-lint-output.txt >> ../frontend-lint-results.md
+            echo '```' >> ../frontend-lint-results.md
+            echo "lint_status=failure" >> $GITHUB_OUTPUT
+          fi
+        continue-on-error: true
+      
+      - name: Build frontend
+        id: build
+        run: |
+          cd frontend
+          if npm run build 2>&1 | tee ../frontend-build-output.txt; then
+            echo "build_status=success" >> $GITHUB_OUTPUT
+          else
+            echo "build_status=failure" >> $GITHUB_OUTPUT
+          fi
+        continue-on-error: true
+      
+      - name: Upload frontend artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontend-results
+          path: |
+            frontend-lint-results.md
+            frontend/dist/
+
+  generate-report:
+    name: Generate Quality Report
+    runs-on: ubuntu-latest
+    needs: [backend-quality, frontend-quality]
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Download backend summary
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-summary
+          path: backend-summary
+        continue-on-error: true
+      
+      - name: Download backend test results
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-test-results
+          path: backend-results
+        continue-on-error: true
+      
+      - name: Download frontend results
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-results
+          path: frontend-results
+        continue-on-error: true
+      
+      - name: Parse backend test results
+        id: test-results
+        run: |
+          if [ -f backend-results/test-results.xml ]; then
+            TESTS=$(grep -oP 'tests="\K[0-9]+' backend-results/test-results.xml | head -1)
+            FAILURES=$(grep -oP 'failures="\K[0-9]+' backend-results/test-results.xml | head -1)
+            ERRORS=$(grep -oP 'errors="\K[0-9]+' backend-results/test-results.xml | head -1)
+            SKIPPED=$(grep -oP 'skipped="\K[0-9]+' backend-results/test-results.xml | head -1)
+            TIME=$(grep -oP 'time="\K[0-9.]+' backend-results/test-results.xml | head -1)
+            
+            PASSED=$((TESTS - FAILURES - ERRORS - SKIPPED))
+            
+            echo "total=$TESTS" >> $GITHUB_OUTPUT
+            echo "passed=$PASSED" >> $GITHUB_OUTPUT
+            echo "failed=$FAILURES" >> $GITHUB_OUTPUT
+            echo "errors=$ERRORS" >> $GITHUB_OUTPUT
+            echo "skipped=$SKIPPED" >> $GITHUB_OUTPUT
+            echo "time=$TIME" >> $GITHUB_OUTPUT
+          fi
       
       - name: Generate comprehensive PR comment
-        if: github.event_name == 'pull_request'
         run: |
           cat > pr-comment.md << 'EOF'
           # 📊 Quality Report
           
           EOF
           
-          # Test Results Section
-          echo "## 🧪 Test Results" >> pr-comment.md
+          # Backend Section
+          echo "## 🐍 Backend (Python)" >> pr-comment.md
           echo "" >> pr-comment.md
           
-          if [ "${{ steps.tests.outputs.test_status }}" == "success" ]; then
+          # Test Results Section
+          echo "### 🧪 Test Results" >> pr-comment.md
+          echo "" >> pr-comment.md
+          
+          if [ "${{ needs.backend-quality.outputs.test_status }}" == "success" ]; then
             echo "✅ **All tests passed!**" >> pr-comment.md
           else
             echo "❌ **Some tests failed**" >> pr-comment.md
@@ -138,16 +266,45 @@ jobs:
           echo "" >> pr-comment.md
           
           # Coverage Section
-          echo "## 📈 Code Coverage" >> pr-comment.md
+          echo "### 📈 Code Coverage" >> pr-comment.md
           echo "" >> pr-comment.md
-          if [ -f code-coverage-results.md ]; then
-            cat code-coverage-results.md >> pr-comment.md
+          if [ -f backend-summary/code-coverage-results.md ]; then
+            cat backend-summary/code-coverage-results.md >> pr-comment.md
           fi
           echo "" >> pr-comment.md
           
-          # Linting Section
-          if [ -f lint-results.md ]; then
-            cat lint-results.md >> pr-comment.md
+          # Backend Linting Section
+          if [ -f backend-summary/lint-results.md ]; then
+            echo "### 🔍 Linting" >> pr-comment.md
+            if [ "${{ needs.backend-quality.outputs.lint_status }}" == "success" ]; then
+              echo "✅ **No linting issues found!**" >> pr-comment.md
+            else
+              echo "⚠️ **Linting issues detected** (see details in workflow logs)" >> pr-comment.md
+            fi
+          fi
+          echo "" >> pr-comment.md
+          
+          # Frontend Section
+          echo "---" >> pr-comment.md
+          echo "" >> pr-comment.md
+          echo "## ⚛️ Frontend (React)" >> pr-comment.md
+          echo "" >> pr-comment.md
+          
+          # Frontend Linting
+          echo "### 🔍 ESLint" >> pr-comment.md
+          if [ "${{ needs.frontend-quality.outputs.lint_status }}" == "success" ]; then
+            echo "✅ **No linting issues found!**" >> pr-comment.md
+          else
+            echo "⚠️ **Linting issues detected** (see details in workflow logs)" >> pr-comment.md
+          fi
+          echo "" >> pr-comment.md
+          
+          # Frontend Build
+          echo "### 🏗️ Build" >> pr-comment.md
+          if [ "${{ needs.frontend-quality.outputs.build_status }}" == "success" ]; then
+            echo "✅ **Build successful!**" >> pr-comment.md
+          else
+            echo "❌ **Build failed** (see details in workflow logs)" >> pr-comment.md
           fi
           echo "" >> pr-comment.md
           
@@ -157,13 +314,50 @@ jobs:
       
       - name: Add PR Comment
         uses: marocchino/sticky-pull-request-comment@v2
-        if: github.event_name == 'pull_request'
         with:
           recreate: true
           path: pr-comment.md
+
+  check-thresholds:
+    name: Check Quality Thresholds
+    runs-on: ubuntu-latest
+    needs: [backend-quality, frontend-quality]
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      
+      - name: Install coverage
+        run: pip install coverage
+      
+      - name: Download backend test results
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-test-results
+          path: .
+        continue-on-error: true
       
       - name: Check coverage threshold
         run: |
-          coverage report --fail-under=80
+          if [ -f coverage.xml ]; then
+            coverage report --fail-under=80
+          fi
         continue-on-error: true
+      
+      - name: Fail if critical checks failed
+        run: |
+          if [ "${{ needs.backend-quality.outputs.test_status }}" != "success" ]; then
+            echo "❌ Backend tests failed"
+            exit 1
+          fi
+          if [ "${{ needs.frontend-quality.outputs.build_status }}" != "success" ]; then
+            echo "❌ Frontend build failed"
+            exit 1
+          fi
+          echo "✅ All critical checks passed"
 

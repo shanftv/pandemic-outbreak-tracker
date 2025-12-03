@@ -96,10 +96,19 @@ class SimulationStore:
         agents = []
         for i in range(config.population_size):
             state = "I" if i < config.initial_infected else "S"
+            # Random initial position
+            x = random.uniform(0, config.grid_size)
+            y = random.uniform(0, config.grid_size)
             agents.append({
                 "id": i,
-                "x": random.uniform(0, config.grid_size),
-                "y": random.uniform(0, config.grid_size),
+                "x": x,
+                "y": y,
+                # Store home position for attraction
+                "home_x": x,
+                "home_y": y,
+                # Initial velocity (like Simple-Epidemic)
+                "vx": random.uniform(-1, 1),
+                "vy": random.uniform(-1, 1),
                 "state": state,
                 "days_in_state": 0.0,
                 "is_isolated": False,
@@ -218,6 +227,11 @@ class SimulationStore:
         state_counts = {"S": 0, "E": 0, "I": 0, "R": 0, "D": 0}
         targets = {"S": new_s, "E": new_e, "I": new_i, "R": new_r, "D": new_d}
         
+        # Movement parameters (like Simple-Epidemic)
+        home_attraction = config.home_attraction
+        random_force = config.random_movement
+        grid_size = config.grid_size
+        
         for agent in agents:
             current_state = agent["state"]
             if state_counts[current_state] < targets[current_state]:
@@ -231,17 +245,46 @@ class SimulationStore:
                         state_counts[state] += 1
                         break
             
-            # Update position (simple random walk)
+            # Update position with velocity-based movement (like Simple-Epidemic)
             if agent["state"] != "D" and not agent["is_isolated"]:
-                agent["x"] += random.uniform(-1, 1) * dt
-                agent["y"] += random.uniform(-1, 1) * dt
-                agent["x"] = max(0, min(config.grid_size, agent["x"]))
-                agent["y"] = max(0, min(config.grid_size, agent["y"]))
+                # 1. Attraction to home
+                dx = agent["home_x"] - agent["x"]
+                dy = agent["home_y"] - agent["y"]
+                agent["vx"] += dx * home_attraction * dt
+                agent["vy"] += dy * home_attraction * dt
+                
+                # 2. Random walk (Brownian motion)
+                agent["vx"] += random.uniform(-1, 1) * random_force * dt
+                agent["vy"] += random.uniform(-1, 1) * random_force * dt
+                
+                # 3. Damping (friction) to prevent exploding speeds
+                agent["vx"] *= 0.95
+                agent["vy"] *= 0.95
+                
+                # Update position
+                agent["x"] += agent["vx"] * dt
+                agent["y"] += agent["vy"] * dt
+                
+                # Boundary checks (bounce)
+                if agent["x"] < 0:
+                    agent["x"] = -agent["x"]
+                    agent["vx"] = -agent["vx"]
+                elif agent["x"] > grid_size:
+                    agent["x"] = 2 * grid_size - agent["x"]
+                    agent["vx"] = -agent["vx"]
+                
+                if agent["y"] < 0:
+                    agent["y"] = -agent["y"]
+                    agent["vy"] = -agent["vy"]
+                elif agent["y"] > grid_size:
+                    agent["y"] = 2 * grid_size - agent["y"]
+                    agent["vy"] = -agent["vy"]
             
             agent["days_in_state"] += dt
         
         # Check if simulation is complete
-        if new_i == 0 and new_e == 0:
+        # Only mark as completed after a reasonable number of steps to prevent premature completion
+        if new_i == 0 and new_e == 0 and sim["total_steps"] > 50:  # Require at least 50 steps
             sim["status"] = SimulationStatus.COMPLETED
         
         sim["last_updated"] = datetime.now(timezone.utc)
