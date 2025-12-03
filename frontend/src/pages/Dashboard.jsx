@@ -1,9 +1,12 @@
+import { useEffect } from "react";
 import { GroupStatCards } from "../components/GroupStatCards.jsx";
 import { DashboardMap } from "../components/DashboardMap.jsx";
 import { TopRiskLocationsTable } from "../components/TopRiskLocationsTable.jsx";
 
 export function Dashboard() {
-  document.title = "Dashboard | Pandemic Outbreak Tracker";
+  useEffect(() => {
+    document.title = "Dashboard | Pandemic Outbreak Tracker";
+  }, []);
   return (
     <div>
       <GroupStatCards />

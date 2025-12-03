@@ -1,5 +1,4 @@
 export function SimulationControls({
-  simulationId,
   isRunning,
   onStart,
   onStop,
