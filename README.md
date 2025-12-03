@@ -1,5 +1,6 @@
 # Pandemic Outbreak Tracker
 
+[![Frontend application](https://github.com/shanftv/pandemic-outbreak-tracker/actions/workflows/frontend-app.yml/badge.svg)](https://github.com/shanftv/pandemic-outbreak-tracker/actions/workflows/frontend-app.yml)
 [![Python application](https://github.com/shanftv/pandemic-outbreak-tracker/actions/workflows/python-app.yml/badge.svg)](https://github.com/shanftv/pandemic-outbreak-tracker/actions/workflows/python-app.yml)
 [![CodeQL](https://github.com/shanftv/pandemic-outbreak-tracker/actions/workflows/codeql.yml/badge.svg)](https://github.com/shanftv/pandemic-outbreak-tracker/actions/workflows/codeql.yml)
 [![Deploy to Azure](https://github.com/shanftv/pandemic-outbreak-tracker/actions/workflows/azure-deploy.yml/badge.svg)](https://github.com/shanftv/pandemic-outbreak-tracker/actions/workflows/azure-deploy.yml)
