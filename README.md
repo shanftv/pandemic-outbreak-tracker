@@ -10,7 +10,8 @@ COVID-19 Philippines infection rate prediction model using LightGBM regression. 
 ## Features
 
 - **7-Day Predictions**: Forecasts infection rates for the next 7 days
-- **Danger Zone Visualization**: Color-coded risk levels for map integration
+- **Interactive Dashboard**: React frontend with real-time map visualization
+- **Danger Zone Visualization**: Color-coded risk levels using Leaflet maps
 - **REST API**: FastAPI-based endpoints for frontend integration
 - **Model Metrics**: Track prediction accuracy with MAE, RMSE, R²
 - **Epidemic Simulations**: Interactive agent-based SEIRD simulations for scenario modeling
@@ -21,36 +22,15 @@ COVID-19 Philippines infection rate prediction model using LightGBM regression. 
 pandemic-outbreak-tracker/
 ├── api/                    # REST API (FastAPI)
 │   ├── main.py            # Application entry point
-│   ├── config.py          # Configuration settings
-│   ├── models/            # Pydantic schemas
-│   │   └── schemas.py     # Request/Response models
 │   ├── routes/            # API endpoints
-│   │   ├── health.py      # Health checks
-│   │   ├── locations.py   # Location data
-│   │   ├── predictions.py # Prediction endpoints
-│   │   ├── danger_zones.py# Map visualization data
-│   │   ├── metrics.py     # Model metrics
-│   │   └── simulations.py # Epidemic simulations
 │   └── services/          # Business logic
-│       ├── prediction_service.py
-│       └── location_service.py
+├── frontend/              # React Dashboard (Vite + Tailwind)
+│   └── src/
+│       ├── components/    # UI components (Map, Stats, Controls)
+│       └── pages/         # Dashboard, Simulation, About
 ├── scripts/               # ML pipeline scripts
-│   ├── prep.py           # Data preparation
-│   ├── features.py       # Feature engineering
-│   ├── train.py          # Model training
-│   └── predict.py        # Generate predictions
 ├── tests/                 # API tests
-│   ├── conftest.py       # Test fixtures
-│   ├── test_health.py
-│   ├── test_locations.py
-│   ├── test_predictions.py
-│   ├── test_danger_zones.py
-│   ├── test_metrics.py
-│   ├── test_simulations.py
-│   └── test_integration.py
 ├── docs/                  # Documentation
-│   ├── API_DOCUMENTATION.md
-│   └── SIMULATION_INTEGRATION.md
 ├── notebooks/             # Jupyter notebooks
 └── data/                  # Data files (git-ignored)
 ```
@@ -70,16 +50,20 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-## Running the API
+## Running the Application
 
 ```bash
-# Start the API server
+# Start the API server (terminal 1)
 uvicorn api.main:app --reload --port 8000
 
-# API will be available at:
-# - http://localhost:8000/docs (Swagger UI)
-# - http://localhost:8000/redoc (ReDoc)
+# Start the frontend (terminal 2)
+cd frontend
+npm install
+npm run dev
 ```
+
+- **API**: http://localhost:8000/docs (Swagger UI)
+- **Frontend**: http://localhost:5173
 
 ## API Endpoints
 
