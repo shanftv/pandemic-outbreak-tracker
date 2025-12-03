@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useCallback } from "react";
 import { ENDPOINTS } from "../utils/api/endpoints.js";
 import { SimulationForm } from "../components/SimulationForm.jsx";
 import { SimulationStats } from "../components/SimulationStats.jsx";
@@ -7,11 +7,11 @@ import { SimulationControls } from "../components/SimulationControls.jsx";
 const DEFAULT_CONFIG = {
   population_size: 200,
   grid_size: 100.0,
-  initial_infected: 1,
-  infection_rate: 1.0,
+  initial_infected: 5,
+  infection_rate: 1.5,
   incubation_mean: 5.0,
   incubation_std: 2.0,
-  infectious_mean: 7.0,
+  infectious_mean: 10.0,
   infectious_std: 3.0,
   mortality_rate: 0.02,
   vaccination_rate: 0.0,
@@ -27,8 +27,9 @@ export function Simulation() {
   const [config, setConfig] = useState(DEFAULT_CONFIG);
   const [simulationId, setSimulationId] = useState(null);
   const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [isRunning, setIsRunning] = useState(false);
   const canvasRef = useRef();
+  const runningRef = useRef(false);
 
   function handleChange(e) {
     const { name, value } = e.target;
@@ -39,7 +40,6 @@ export function Simulation() {
   }
 
   async function createSimulation() {
-    setLoading(true);
     const res = await fetch(ENDPOINTS.SIMULATIONS, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -47,18 +47,18 @@ export function Simulation() {
     });
     const data = await res.json();
     setSimulationId(data.simulation_id);
-    setLoading(false);
-    fetchStats(data.simulation_id);
-    await drawAgents();
+    return data.simulation_id;
   }
 
-  async function drawAgents() {
-    if (!simulationId) return;
-    const res = await fetch(`${ENDPOINTS.SIMULATIONS}/${simulationId}/agents`);
+  const drawAgents = useCallback(async (simId) => {
+    const id = simId || simulationId;
+    if (!id) return;
+    const res = await fetch(`${ENDPOINTS.SIMULATIONS}/${id}/agents`);
     const data = await res.json();
     const { agents, state_colors, grid_size } = data;
 
     const canvas = canvasRef.current;
+    if (!canvas) return;
     const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -74,47 +74,88 @@ export function Simulation() {
       );
       ctx.fill();
     });
-  }
+  }, [simulationId]);
 
-  async function stepSimulation() {
-    if (!simulationId) return;
-    setLoading(true);
-    await fetch(`${ENDPOINTS.SIMULATIONS}/${simulationId}/step`, {
-      method: "POST",
-    });
-    fetchStats(simulationId);
-    await drawAgents();
-    setLoading(false);
-  }
-
-  async function runSimulation() {
-    if (!simulationId) return;
-    setLoading(true);
-    await fetch(`${ENDPOINTS.SIMULATIONS}/${simulationId}/run`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ steps: 100 }),
-    });
-    fetchStats(simulationId);
-    await drawAgents();
-    setLoading(false);
-  }
-
-  async function fetchStats(id) {
+  const fetchStats = useCallback(async (id) => {
     const res = await fetch(`${ENDPOINTS.SIMULATIONS}/${id}/stats`);
     const data = await res.json();
     setStats(data);
+  }, []);
+
+  // Continuous simulation loop
+  const runLoop = useCallback(async (simId) => {
+    if (!runningRef.current) return;
+
+    try {
+      const stepResponse = await fetch(`${ENDPOINTS.SIMULATIONS}/${simId}/step`, {
+        method: "POST",
+      });
+
+      if (!stepResponse.ok) {
+        if (stepResponse.status === 400) {
+          // Simulation completed
+          console.log("Simulation completed");
+          runningRef.current = false;
+          setIsRunning(false);
+          return;
+        }
+        throw new Error(`Step failed with status ${stepResponse.status}`);
+      }
+
+      await fetchStats(simId);
+      await drawAgents(simId);
+
+      // Continue loop if still running
+      if (runningRef.current) {
+        setTimeout(() => runLoop(simId), 50);
+      }
+    } catch (error) {
+      console.error("Simulation error:", error);
+      runningRef.current = false;
+      setIsRunning(false);
+    }
+  }, [fetchStats, drawAgents]);
+
+  async function handleStart() {
+    let simId = simulationId;
+    
+    // Create simulation if not exists
+    if (!simId) {
+      simId = await createSimulation();
+      await fetchStats(simId);
+      await drawAgents(simId);
+    }
+
+    // Start continuous loop
+    runningRef.current = true;
+    setIsRunning(true);
+    runLoop(simId);
+  }
+
+  function handleStop() {
+    runningRef.current = false;
+    setIsRunning(false);
+  }
+
+  async function handleReset() {
+    runningRef.current = false;
+    setIsRunning(false);
+    setStats(null);
+    
+    // Create new simulation
+    const simId = await createSimulation();
+    await fetchStats(simId);
+    await drawAgents(simId);
   }
 
   return (
     <div className="p-4 pb-4">
       <h1 className="text-3xl font-bold mb-2">PANDEMIC SIMULATION</h1>
       <p className="mb-6 text-gray-700">
-        Configure the simulation parameters below, then start and step/run the
-        simulation to visualize the spread of disease among agents. Use the
-        "Step" button to advance one time step, or "Run 100 Steps" for a longer
-        simulation. The agent scatter chart shows each individual's state and
-        position.
+        Configure the simulation parameters below, then use the controls to
+        run the simulation. Press <strong>Start</strong> to begin continuous
+        simulation, <strong>Stop</strong> to pause, and <strong>Reset</strong> to
+        restart with current parameters.
       </p>
       <div className="flex item-center gap-8 px-4 justify-center">
         <div>
@@ -122,11 +163,10 @@ export function Simulation() {
           <SimulationForm config={config} onChange={handleChange} />
           <SimulationControls
             simulationId={simulationId}
-            loading={loading}
-            createSimulation={createSimulation}
-            stepSimulation={stepSimulation}
-            runSimulation={runSimulation}
-            drawAgents={drawAgents}
+            isRunning={isRunning}
+            onStart={handleStart}
+            onStop={handleStop}
+            onReset={handleReset}
           />
         </div>
 

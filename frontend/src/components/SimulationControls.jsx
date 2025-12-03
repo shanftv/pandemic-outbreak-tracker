@@ -1,63 +1,39 @@
 export function SimulationControls({
   simulationId,
-  loading,
-  createSimulation,
-  stepSimulation,
-  runSimulation,
-  drawAgents,
+  isRunning,
+  onStart,
+  onStop,
+  onReset,
 }) {
   return (
-    <div className="flex flex-wrap gap-2 mt-4">
+    <div className="flex gap-2 mt-4">
       <button
-        className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition cursor-pointer"
-        onClick={createSimulation}
-        disabled={loading}
+        className={`${
+          isRunning
+            ? "bg-gray-400 cursor-not-allowed"
+            : "bg-emerald-600 hover:bg-emerald-700"
+        } text-white px-5 py-2.5 rounded-lg transition font-medium`}
+        onClick={onStart}
+        disabled={isRunning}
       >
-        Start Simulation
+        Start
       </button>
       <button
         className={`${
-          !simulationId
+          !isRunning
             ? "bg-gray-400 cursor-not-allowed"
-            : "bg-green-600 hover:bg-green-700"
-        } text-white px-4 py-2 rounded-lg transition`}
-        onClick={stepSimulation}
-        disabled={!simulationId || loading}
+            : "bg-amber-600 hover:bg-amber-700"
+        } text-white px-5 py-2.5 rounded-lg transition font-medium`}
+        onClick={onStop}
+        disabled={!isRunning}
       >
-        Step
+        Stop
       </button>
       <button
-        className={`${
-          !simulationId
-            ? "bg-gray-400 cursor-not-allowed"
-            : "bg-purple-600 hover:bg-purple-700"
-        } text-white px-4 py-2 rounded-lg transition`}
-        onClick={runSimulation}
-        disabled={!simulationId || loading}
+        className="bg-slate-600 hover:bg-slate-700 text-white px-5 py-2.5 rounded-lg transition font-medium"
+        onClick={onReset}
       >
-        Run 100 Steps
-      </button>
-      <button
-        className={`${
-          !simulationId
-            ? "bg-gray-400 cursor-not-allowed"
-            : "bg-gray-600 hover:bg-gray-700"
-        } text-white px-4 py-2 rounded-lg transition`}
-        onClick={drawAgents}
-        disabled={!simulationId}
-      >
-        Draw Agents
-      </button>
-      <button
-        className={`${
-          !simulationId
-            ? "bg-gray-400 cursor-not-allowed"
-            : "bg-orange-600 hover:bg-orange-700"
-        } text-white px-4 py-2 rounded-lg transition`}
-        onClick={createSimulation}
-        disabled={!simulationId || loading}
-      >
-        Restart Simulation
+        Reset
       </button>
     </div>
   );
