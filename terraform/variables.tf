@@ -63,6 +63,12 @@ variable "log_retention_days" {
 }
 
 # Container App - API
+variable "use_placeholder_image" {
+  description = "Use placeholder image for initial deployment (set to false after pushing your image to ACR)"
+  type        = bool
+  default     = true
+}
+
 variable "api_image_name" {
   description = "Docker image name for the API"
   type        = string

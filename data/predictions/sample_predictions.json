@@ -1,0 +1,20 @@
+{
+  "generated_at": "2025-12-07T14:00:00Z",
+  "forecast_days": 7,
+  "locations": [
+    {
+      "location": "NCR",
+      "predictions": [
+        {"date": "2025-12-08", "predicted_cases": 150, "confidence_low": 120, "confidence_high": 180},
+        {"date": "2025-12-09", "predicted_cases": 145, "confidence_low": 115, "confidence_high": 175}
+      ]
+    },
+    {
+      "location": "Region IV-A",
+      "predictions": [
+        {"date": "2025-12-08", "predicted_cases": 85, "confidence_low": 70, "confidence_high": 100},
+        {"date": "2025-12-09", "predicted_cases": 82, "confidence_low": 67, "confidence_high": 97}
+      ]
+    }
+  ]
+}

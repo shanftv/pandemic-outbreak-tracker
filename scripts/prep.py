@@ -38,7 +38,7 @@ def standardize_and_fill(df, date_col='date', loc_col='location', target_col='ne
             freq='D'
         )
 
-        group_indexed = group.set_index(date_col)
+        group_indexed = group.set_index(date_col)[[target_col]]  # Keep only target column
         group_filled = group_indexed.reindex(date_range, fill_value=0)
         
         group_filled = group_filled.reset_index()
