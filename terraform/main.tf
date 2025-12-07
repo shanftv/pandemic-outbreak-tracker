@@ -44,9 +44,18 @@ resource "azurerm_resource_group" "main" {
   tags = var.tags
 }
 
+# Local value for alphanumeric-only names (ACR and Storage require no hyphens)
+locals {
+  # Remove hyphens for resources that only allow alphanumeric characters
+  project_name_clean = replace(var.project_name, "-", "")
+  # Short prefix for storage accounts (max 24 chars total)
+  # Format: pt<env>data<suffix> e.g., ptdevdatahhefwz (16 chars)
+  storage_prefix = "pt"
+}
+
 # Container Registry
 resource "azurerm_container_registry" "acr" {
-  name                = "${var.project_name}${var.environment}acr${random_string.suffix.result}"
+  name                = "${local.project_name_clean}${var.environment}acr${random_string.suffix.result}"
   resource_group_name = azurerm_resource_group.main.name
   location            = azurerm_resource_group.main.location
   sku                 = var.acr_sku
@@ -78,7 +87,7 @@ resource "azurerm_container_app_environment" "main" {
 
 # Storage Account for data, models, and predictions
 resource "azurerm_storage_account" "data" {
-  name                     = "${var.project_name}${var.environment}data${random_string.suffix.result}"
+  name                     = "${local.storage_prefix}${var.environment}data${random_string.suffix.result}"
   resource_group_name      = azurerm_resource_group.main.name
   location                 = azurerm_resource_group.main.location
   account_tier             = "Standard"
@@ -131,7 +140,9 @@ resource "azurerm_container_app" "api" {
   template {
     container {
       name   = "api"
-      image  = "${azurerm_container_registry.acr.login_server}/${var.api_image_name}:${var.api_image_tag}"
+      # Use placeholder image for initial deployment, then update after pushing real image to ACR
+      # Set var.use_placeholder_image = false after pushing your image to ACR
+      image  = var.use_placeholder_image ? "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest" : "${azurerm_container_registry.acr.login_server}/${var.api_image_name}:${var.api_image_tag}"
       cpu    = var.api_cpu
       memory = var.api_memory
       

@@ -4,6 +4,7 @@ Business logic for accessing and processing prediction data.
 """
 
 import json
+import logging
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 from api.models.schemas import (
@@ -13,6 +14,8 @@ from api.models.schemas import (
 )
 from api.config import settings, LOCATION_COORDINATES
 
+logger = logging.getLogger(__name__)
+
 
 class PredictionService:
     """Service for managing prediction data access and processing."""
@@ -21,9 +24,42 @@ class PredictionService:
         self._cache = None
         self._cache_time = None
         self._cache_ttl = 300  # 5 minutes
+        self._blob_client = None
+    
+    def _get_blob_client(self):
+        """Get Azure Blob client (lazy initialization)."""
+        if self._blob_client is None and settings.use_azure_storage:
+            try:
+                from azure.storage.blob import BlobServiceClient
+                self._blob_client = BlobServiceClient.from_connection_string(
+                    settings.azure_storage_connection_string
+                )
+                logger.info("Azure Blob Storage client initialized")
+            except Exception as e:
+                logger.error(f"Failed to initialize Azure Blob client: {e}")
+                self._blob_client = None
+        return self._blob_client
+    
+    def _load_from_azure(self) -> dict:
+        """Load predictions from Azure Blob Storage."""
+        try:
+            blob_client = self._get_blob_client()
+            if blob_client is None:
+                return {}
+            
+            container_client = blob_client.get_container_client(
+                settings.azure_predictions_container
+            )
+            blob = container_client.get_blob_client(settings.azure_predictions_blob)
+            
+            data = blob.download_blob().readall()
+            return json.loads(data)
+        except Exception as e:
+            logger.error(f"Failed to load predictions from Azure: {e}")
+            return {}
     
     def _load_predictions(self) -> dict:
-        """Load predictions from JSON file with caching."""
+        """Load predictions with caching (Azure or local file)."""
         now = datetime.now(timezone.utc)
         
         # Check cache validity
@@ -32,7 +68,16 @@ class PredictionService:
             (now - self._cache_time).seconds < self._cache_ttl):
             return self._cache
         
-        # Load from file
+        # Try Azure Storage first if configured
+        if settings.use_azure_storage:
+            logger.info("Loading predictions from Azure Blob Storage")
+            data = self._load_from_azure()
+            if data:
+                self._cache = data
+                self._cache_time = now
+                return self._cache
+        
+        # Fallback to local file
         if not settings.predictions_json.exists():
             return {}
         

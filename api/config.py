@@ -24,14 +24,34 @@ class Settings(BaseSettings):
     cors_allow_methods: list = ["*"]
     cors_allow_headers: list = ["*"]
     
-    # Data Paths
+    # Azure Storage Settings (read directly from env without prefix)
+    azure_predictions_container: str = "predictions"
+    azure_predictions_blob: str = "predictions_7d.json"
+    azure_models_container: str = "models"
+    
+    # Data Paths (fallback for local development)
     project_root: Path = Path(__file__).parent.parent
     data_dir: Path = project_root / "data"
     models_dir: Path = data_dir / "models"
-    predictions_json: Path = data_dir / "predictions" / "predictions.json"
+    predictions_json: Path = data_dir / "predictions" / "predictions_7d.json"
     predictions_csv: Path = data_dir / "predictions" / "predictions.csv"
     features_csv: Path = data_dir / "processed" / "features.csv"
     metrics_csv: Path = data_dir / "models" / "metrics.csv"
+    
+    @property
+    def azure_storage_connection_string(self) -> Optional[str]:
+        """Get Azure Storage connection string from env (without prefix)."""
+        return os.environ.get("AZURE_STORAGE_CONNECTION_STRING")
+    
+    @property
+    def azure_storage_account_name(self) -> Optional[str]:
+        """Get Azure Storage account name from env (without prefix)."""
+        return os.environ.get("AZURE_STORAGE_ACCOUNT_NAME")
+    
+    @property
+    def use_azure_storage(self) -> bool:
+        """Check if Azure Storage is configured."""
+        return self.azure_storage_connection_string is not None
     
     # Model Settings
     prediction_horizon: int = 7  # Days to forecast
